@@ -29,6 +29,7 @@ features:
     always_online: true
   slash_commands:
     - command: /jules-token
+      url: https://jules-slack-mention.YOUR_SUBDOMAIN.workers.dev/slack/events
       description: Set your Jules API token
       should_escape: false
 oauth_config:
@@ -43,6 +44,7 @@ oauth_config:
       - reactions:write
 settings:
   event_subscriptions:
+    request_url: https://jules-slack-mention.YOUR_SUBDOMAIN.workers.dev/slack/events
     bot_events:
       - app_mention
       - message.im
