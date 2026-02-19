@@ -1,0 +1,31 @@
+{
+  "name": "jules-slack-mention",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "slack-cloudflare-workers": "^1.3.9"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.109.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "SLACK_SIGNING_SECRET": {
+        "description": "Your Slack app's Signing Secret from [api.slack.com/apps](https://api.slack.com/apps) → Your App → Basic Information"
+      },
+      "SLACK_BOT_TOKEN": {
+        "description": "Your Slack Bot User OAuth Token from [api.slack.com/apps](https://api.slack.com/apps) → Your App → OAuth & Permissions (starts with `xoxb-`)"
+      },
+      "SLACK_BOT_USER_ID": {
+        "description": "Your Slack bot's User ID (find it by mentioning your bot in Slack and checking the link)"
+      }
+    }
+  }
+}
