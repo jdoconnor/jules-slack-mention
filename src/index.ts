@@ -9,6 +9,88 @@ interface Env extends SlackEdgeAppEnv {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/notion")) {
+      if (request.method !== "POST") {
+        return new Response("Method not allowed", { status: 405 });
+      }
+
+      const body = await request.json() as any;
+      const userId = body.triggeredByNotionUserId;
+
+      if (!userId) {
+        return new Response("Missing triggeredByNotionUserId", { status: 400 });
+      }
+
+      if (url.pathname === "/notion/token") {
+        const token = body.token;
+        if (!token) return new Response("Missing token", { status: 400 });
+        await env.USER_TOKENS.put(`notion_token:${userId}`, token);
+        return new Response(JSON.stringify({ message: "Notion token registered" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      if (url.pathname === "/notion/repo") {
+        const repo = body.repo;
+        if (!repo) return new Response("Missing repo", { status: 400 });
+        await env.USER_TOKENS.put(`notion_repo:${userId}`, repo);
+        return new Response(JSON.stringify({ message: "Notion repo registered" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      if (url.pathname === "/notion") {
+        const text = body.text;
+        if (!text) return new Response("Missing text", { status: 400 });
+
+        const userToken = await env.USER_TOKENS.get(`notion_token:${userId}`);
+        if (!userToken) {
+          return new Response(JSON.stringify({ error: "No Jules token found. Register with /notion/token first." }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        try {
+          const sources = await listJulesSources(userToken);
+          if (!sources || sources.length === 0) {
+            return new Response(JSON.stringify({ error: "No GitHub repositories found." }), {
+              status: 404,
+              headers: { "Content-Type": "application/json" }
+            });
+          }
+
+          const storedRepo = await env.USER_TOKENS.get(`notion_repo:${userId}`);
+          const source = selectSource(sources, storedRepo);
+          const session = await createJulesSession(userToken, text, source.name);
+
+          ctx.waitUntil(pollSessionAndLog(userToken, session.id));
+
+          return new Response(JSON.stringify({
+            message: "Jules session started",
+            sessionId: session.id,
+            title: session.title
+          }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          });
+        } catch (error) {
+          console.error(JSON.stringify({
+            message: "failed to create notion jules session",
+            error: error instanceof Error ? error.message : String(error),
+            userId,
+          }));
+          return new Response(JSON.stringify({ error: "Failed to start Jules session" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+      }
+    }
+
     const app = new SlackApp({ env });
 
     app.command("/jules-token", async ({ payload }) => {
@@ -326,4 +408,43 @@ async function pollSessionAndNotify(
     thread_ts: threadTs,
     text: `Session ${sessionId} is still in progress. Check status at https://jules.google.com`,
   } as unknown as Parameters<typeof client.chat.postMessage>[0]);
+}
+
+async function pollSessionAndLog(
+  apiKey: string,
+  sessionId: string
+) {
+  const maxAttempts = 60;
+  const pollInterval = 10000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+
+    try {
+      const session = await getSession(apiKey, sessionId);
+
+      if (session.outputs && session.outputs.length > 0) {
+        const pr = session.outputs[0].pullRequest;
+        if (pr) {
+          console.log(JSON.stringify({
+            message: "Notion task completed",
+            sessionId,
+            prUrl: pr.url
+          }));
+          return;
+        }
+      }
+    } catch (error) {
+      console.error(JSON.stringify({
+        message: "notion polling error",
+        sessionId,
+        error: error instanceof Error ? error.message : String(error),
+      }));
+    }
+  }
+
+  console.log(JSON.stringify({
+    message: "Notion task timed out",
+    sessionId
+  }));
 }

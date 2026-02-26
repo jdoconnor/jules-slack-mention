@@ -1,0 +1,36 @@
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+ ⛅️ wrangler 3.114.17 (update available 4.69.0)
+-----------------------------------------------
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProcessing wrangler.toml configuration:[0m
+
+    - Unexpected fields found in observability field: "traces"
+
+
+Your Worker and resources are simulated locally via Miniflare. For more information, see: https://developers.cloudflare.com/workers/testing/local-development.
+
+Your worker has access to the following bindings:
+- KV Namespaces:
+  - USER_TOKENS: placeholder-replace-with-real-kv-id [simulated locally]
+- Vars:
+  - SLACK_BOT_USER_ID: ""
+⎔ Starting local server...
+[wrangler-UserWorker:wrn] The latest compatibility date supported by the installed Cloudflare Workers Runtime is "2025-07-18",
+but you've requested "2026-02-19". Falling back to "2025-07-18"...
+Features enabled by your requested compatibility date may not be available.
+Upgrade to `wrangler@4.69.0` to remove this warning.
+[wrangler:inf] Ready on http://localhost:8787
+[wrangler:inf] POST /notion/token 200 OK (70ms)
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1m{"message":"failed to create notion jules session","error":"Failed to list sources: 401","userId":"user123"}[0m
+
+
+[wrangler:inf] POST /notion 500 Internal Server Error (50ms)
